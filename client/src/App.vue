@@ -315,6 +315,7 @@ onMounted(async () => {
 
         <div class="ticket-table">
           <div class="table-head">
+            <span>Номер</span>
             <span>Заявка</span>
             <span>Контур</span>
             <span>Приоритет</span>
@@ -331,9 +332,10 @@ onMounted(async () => {
             :class="[ticket.priority.toLowerCase(), { selected: selectedTicket?.id === ticket.id }]"
             @click="selectedTicketId = ticket.id"
           >
+            <span class="ticket-code">#{{ ticket.id }}</span>
             <span class="ticket-main">
               <strong>{{ ticket.title }}</strong>
-              <small>#{{ ticket.id }} · {{ ticket.requester }} · до {{ formatDate(ticket.dueAt) }}</small>
+              <small>{{ ticket.requester }} · до {{ formatDate(ticket.dueAt) }}</small>
             </span>
             <span class="system-cell">{{ ticket.system }}</span>
             <span class="badge" :class="ticket.priority.toLowerCase()">{{ priorityLabels[ticket.priority] }}</span>
@@ -473,12 +475,18 @@ onMounted(async () => {
 
       <div class="knowledge-list">
         <article v-for="article in articles" :key="article.id">
-          <div>
+          <div class="knowledge-topline">
+            <span>runbook / {{ article.system }}</span>
+            <small>{{ article.tags.join(' · ') }}</small>
+          </div>
+          <div class="knowledge-title">
             <strong>{{ article.title }}</strong>
-            <span>{{ article.system }}</span>
           </div>
           <p>{{ article.problem }}</p>
-          <small>{{ article.resolution }}</small>
+          <div class="knowledge-resolution">
+            <span>resolution</span>
+            <small>{{ article.resolution }}</small>
+          </div>
         </article>
       </div>
     </section>
