@@ -70,6 +70,13 @@ const filteredTickets = computed(() => {
   return tickets.value.filter((ticket) => ticket.status === activeStatus.value);
 });
 
+const intakeProgress = computed(() => {
+  const checks = [draft.title.trim(), draft.requester.trim(), draft.system.trim(), draft.description.trim()];
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+});
+
+const intakeProgressStyle = computed(() => ({ width: `${intakeProgress.value}%` }));
+
 const slaRiskCount = computed(() => tickets.value.filter((ticket) => new Date(ticket.dueAt).getTime() < Date.now()).length);
 
 const queueHealth = computed(() => {
@@ -461,6 +468,22 @@ onMounted(async () => {
           <div>
             <p class="eyebrow">Новая заявка</p>
             <h2>Регистрация обращения</h2>
+          </div>
+        </div>
+
+        <div class="intake-live">
+          <div class="intake-progress">
+            <div>
+              <span>Заполнение</span>
+              <strong>{{ intakeProgress }}%</strong>
+            </div>
+            <i :style="intakeProgressStyle"></i>
+          </div>
+
+          <div class="intake-chips" aria-label="Сигналы автоклассификации">
+            <span>auto triage</span>
+            <span>{{ priorityLabels[classification.priority] }}</span>
+            <span>{{ classification.assignee }}</span>
           </div>
         </div>
 
