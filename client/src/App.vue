@@ -11,6 +11,7 @@ const selectedTicketId = ref<number | null>(null);
 const activeStatus = ref<TicketStatus | 'All'>('All');
 const apiMode = ref<'online' | 'demo'>('demo');
 const isLoading = ref(true);
+const isMetricsOpen = ref(false);
 const formError = ref('');
 
 const draft = reactive<CreateTicketRequest>({
@@ -190,11 +191,57 @@ onMounted(async () => {
         <a href="#knowledge">Решения</a>
       </nav>
 
-      <div class="status-pill" :class="apiMode">
-        <span></span>
-        {{ apiMode === 'online' ? 'API online' : 'demo data' }}
+      <div class="masthead-actions">
+        <button
+          type="button"
+          class="metrics-trigger"
+          :aria-expanded="isMetricsOpen"
+          aria-controls="metrics-widget"
+          @click="isMetricsOpen = !isMetricsOpen"
+        >
+          <span>{{ summary.openCount + summary.inProgressCount }}</span>
+          Сводка
+        </button>
+
+        <div class="status-pill" :class="apiMode">
+          <span></span>
+          {{ apiMode === 'online' ? 'API online' : 'demo data' }}
+        </div>
       </div>
     </header>
+
+    <section v-if="isMetricsOpen" id="metrics-widget" class="metrics-widget" aria-label="Показатели очереди">
+      <div class="metrics-widget-head">
+        <div>
+          <p class="eyebrow">Shift snapshot</p>
+          <h2>Сводка очереди</h2>
+        </div>
+        <button type="button" aria-label="Закрыть сводку" @click="isMetricsOpen = false">×</button>
+      </div>
+
+      <div class="metrics-grid">
+        <article class="metric open">
+          <span>Новые</span>
+          <strong>{{ summary.openCount }}</strong>
+        </article>
+        <article class="metric progress">
+          <span>В работе</span>
+          <strong>{{ summary.inProgressCount }}</strong>
+        </article>
+        <article class="metric done">
+          <span>Решено</span>
+          <strong>{{ summary.resolvedTodayCount }}</strong>
+        </article>
+        <article class="metric risk">
+          <span>SLA риск</span>
+          <strong>{{ summary.overdueCount || slaRiskCount }}</strong>
+        </article>
+        <article class="metric automation">
+          <span>Авто</span>
+          <strong>{{ summary.automationCoveragePercent }}%</strong>
+        </article>
+      </div>
+    </section>
 
     <section class="hero-console">
       <div class="hero-copy">
@@ -231,29 +278,6 @@ onMounted(async () => {
         <strong>{{ queueHealth }}</strong>
         <small>{{ summary.automationCoveragePercent }}% обращений получают автоподсказку</small>
       </div>
-    </section>
-
-    <section class="metrics-line" aria-label="Показатели очереди">
-      <article class="metric open">
-        <span>Новые</span>
-        <strong>{{ summary.openCount }}</strong>
-      </article>
-      <article class="metric progress">
-        <span>В работе</span>
-        <strong>{{ summary.inProgressCount }}</strong>
-      </article>
-      <article class="metric done">
-        <span>Решено</span>
-        <strong>{{ summary.resolvedTodayCount }}</strong>
-      </article>
-      <article class="metric risk">
-        <span>SLA риск</span>
-        <strong>{{ summary.overdueCount || slaRiskCount }}</strong>
-      </article>
-      <article class="metric automation">
-        <span>Авто</span>
-        <strong>{{ summary.automationCoveragePercent }}%</strong>
-      </article>
     </section>
 
     <section id="queue" class="queue-layout">
