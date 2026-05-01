@@ -197,9 +197,33 @@ onMounted(async () => {
     </header>
 
     <section class="hero-console">
-      <div>
-        <p class="eyebrow">Рабочая смена первой линии</p>
-        <h1>Заявки, SLA и подсказки поддержки в одном окне</h1>
+      <div class="hero-copy">
+        <p class="eyebrow">Open support · Delta leasing · 2026</p>
+        <h1>Support desk, который держит SLA <em>под контролем</em></h1>
+        <p class="hero-lede">
+          Темная операторская сцена, плотная очередь и автоматические подсказки для первой линии.
+        </p>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="visual-card visual-card-main">
+          <span class="visual-kicker">incident queue</span>
+          <strong>CRM / 500</strong>
+          <small>logs · договоры · high</small>
+          <div class="visual-bars">
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+          </div>
+        </div>
+        <div class="visual-card visual-card-side">
+          <span class="visual-kicker">auto reply</span>
+          <strong>готов шаблон</strong>
+          <small>проверяем журналы API</small>
+        </div>
+        <div class="visual-stamp">SLA</div>
       </div>
 
       <div class="health-board">
