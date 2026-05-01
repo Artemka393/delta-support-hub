@@ -174,163 +174,184 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="shell">
-    <aside class="sidebar">
+  <main class="console">
+    <header class="masthead">
       <div class="brand">
         <span class="brand-mark">SF</span>
         <div>
           <strong>SupportFlow Hub</strong>
-          <span>внутренняя поддержка</span>
+          <span>service desk console</span>
         </div>
       </div>
 
       <nav class="nav">
         <a href="#queue" class="active">Очередь</a>
-        <a href="#automation">Автоматизация</a>
-        <a href="#knowledge">База знаний</a>
+        <a href="#automation">Заведение</a>
+        <a href="#knowledge">Решения</a>
       </nav>
 
       <div class="status-pill" :class="apiMode">
         <span></span>
-        {{ apiMode === 'online' ? 'API подключен' : 'Демо-режим' }}
+        {{ apiMode === 'online' ? 'API online' : 'demo data' }}
       </div>
-    </aside>
+    </header>
 
-    <section class="workspace">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Рабочее место первой линии</p>
-          <h1>Контроль обращений и автоматизация поддержки</h1>
+    <section class="hero-console">
+      <div>
+        <p class="eyebrow">Рабочая смена первой линии</p>
+        <h1>Заявки, SLA и подсказки поддержки в одном окне</h1>
+      </div>
+
+      <div class="health-board">
+        <span>Состояние очереди</span>
+        <strong>{{ queueHealth }}</strong>
+        <small>{{ summary.automationCoveragePercent }}% обращений получают автоподсказку</small>
+      </div>
+    </section>
+
+    <section class="metrics-line" aria-label="Показатели очереди">
+      <article class="metric open">
+        <span>Новые</span>
+        <strong>{{ summary.openCount }}</strong>
+      </article>
+      <article class="metric progress">
+        <span>В работе</span>
+        <strong>{{ summary.inProgressCount }}</strong>
+      </article>
+      <article class="metric done">
+        <span>Решено</span>
+        <strong>{{ summary.resolvedTodayCount }}</strong>
+      </article>
+      <article class="metric risk">
+        <span>SLA риск</span>
+        <strong>{{ summary.overdueCount || slaRiskCount }}</strong>
+      </article>
+      <article class="metric automation">
+        <span>Авто</span>
+        <strong>{{ summary.automationCoveragePercent }}%</strong>
+      </article>
+    </section>
+
+    <section id="queue" class="queue-layout">
+      <aside class="filter-rail">
+        <p class="eyebrow">Фильтр</p>
+        <h2>Статусы</h2>
+
+        <div class="tabs" role="tablist">
+          <button
+            v-for="(label, status) in statusLabels"
+            :key="status"
+            type="button"
+            :class="{ active: activeStatus === status }"
+            @click="activeStatus = status"
+          >
+            {{ label }}
+          </button>
         </div>
-        <div class="health">
-          <span>Состояние очереди</span>
-          <strong>{{ queueHealth }}</strong>
+
+        <div class="rail-note">
+          <span>Очередь</span>
+          <strong>{{ filteredTickets.length }}</strong>
+          <small>видимых обращений</small>
         </div>
-      </header>
+      </aside>
 
-      <section class="metrics" aria-label="Показатели очереди">
-        <article>
-          <span>Новые</span>
-          <strong>{{ summary.openCount }}</strong>
-        </article>
-        <article>
-          <span>В работе</span>
-          <strong>{{ summary.inProgressCount }}</strong>
-        </article>
-        <article>
-          <span>Решено сегодня</span>
-          <strong>{{ summary.resolvedTodayCount }}</strong>
-        </article>
-        <article class="risk">
-          <span>SLA риск</span>
-          <strong>{{ summary.overdueCount || slaRiskCount }}</strong>
-        </article>
-        <article>
-          <span>Автоматизация</span>
-          <strong>{{ summary.automationCoveragePercent }}%</strong>
-        </article>
-      </section>
-
-      <section id="queue" class="grid">
-        <div class="panel queue-panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Очередь</p>
-              <h2>Обращения пользователей</h2>
-            </div>
-            <button type="button" @click="loadWorkspace">Обновить</button>
+      <section class="ticket-board">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Live queue</p>
+            <h2>Обращения пользователей</h2>
           </div>
+          <button type="button" class="ghost-button" @click="loadWorkspace">Обновить</button>
+        </div>
 
-          <div class="tabs" role="tablist">
-            <button
-              v-for="(label, status) in statusLabels"
-              :key="status"
-              type="button"
-              :class="{ active: activeStatus === status }"
-              @click="activeStatus = status"
-            >
-              {{ label }}
-            </button>
+        <div class="ticket-table">
+          <div class="table-head">
+            <span>Заявка</span>
+            <span>Контур</span>
+            <span>Приоритет</span>
           </div>
 
           <div v-if="isLoading" class="empty">Загружаем обращения...</div>
           <div v-else-if="filteredTickets.length === 0" class="empty">По выбранному статусу обращений нет.</div>
-          <div v-else class="ticket-list">
-            <button
-              v-for="ticket in filteredTickets"
-              :key="ticket.id"
-              type="button"
-              class="ticket-row"
-              :class="{ selected: selectedTicket?.id === ticket.id }"
-              @click="selectedTicketId = ticket.id"
-            >
-              <span class="ticket-main">
-                <strong>{{ ticket.title }}</strong>
-                <small>{{ ticket.requester }} · {{ ticket.system }} · до {{ formatDate(ticket.dueAt) }}</small>
-              </span>
-              <span class="badge" :class="ticket.priority.toLowerCase()">{{ priorityLabels[ticket.priority] }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="panel detail-panel">
-          <template v-if="selectedTicket">
-            <div class="panel-head">
-              <div>
-                <p class="eyebrow">Заявка #{{ selectedTicket.id }}</p>
-                <h2>{{ selectedTicket.title }}</h2>
-              </div>
-              <span class="badge neutral">{{ statusLabels[selectedTicket.status] }}</span>
-            </div>
-
-            <p class="description">{{ selectedTicket.description }}</p>
-
-            <dl class="details">
-              <div>
-                <dt>Система</dt>
-                <dd>{{ selectedTicket.system }}</dd>
-              </div>
-              <div>
-                <dt>Ответственный</dt>
-                <dd>{{ selectedTicket.assignee }}</dd>
-              </div>
-              <div>
-                <dt>Создано</dt>
-                <dd>{{ formatDate(selectedTicket.createdAt) }}</dd>
-              </div>
-              <div>
-                <dt>SLA</dt>
-                <dd>{{ formatDate(selectedTicket.dueAt) }}</dd>
-              </div>
-            </dl>
-
-            <div class="hint">
-              <span>Подсказка автоматизации</span>
-              <p>{{ selectedTicket.automationHint }}</p>
-            </div>
-
-            <div class="tags">
-              <span v-for="tag in selectedTicket.tags" :key="tag">#{{ tag }}</span>
-            </div>
-
-            <div class="actions">
-              <button type="button" @click="setStatus(selectedTicket, 'InProgress')">В работу</button>
-              <button type="button" @click="setStatus(selectedTicket, 'WaitingForUser')">Ждем ответ</button>
-              <button type="button" class="primary" @click="setStatus(selectedTicket, 'Resolved')">Решено</button>
-            </div>
-          </template>
+          <button
+            v-for="ticket in filteredTickets"
+            v-else
+            :key="ticket.id"
+            type="button"
+            class="ticket-row"
+            :class="[ticket.priority.toLowerCase(), { selected: selectedTicket?.id === ticket.id }]"
+            @click="selectedTicketId = ticket.id"
+          >
+            <span class="ticket-main">
+              <strong>{{ ticket.title }}</strong>
+              <small>#{{ ticket.id }} · {{ ticket.requester }} · до {{ formatDate(ticket.dueAt) }}</small>
+            </span>
+            <span class="system-cell">{{ ticket.system }}</span>
+            <span class="badge" :class="ticket.priority.toLowerCase()">{{ priorityLabels[ticket.priority] }}</span>
+          </button>
         </div>
       </section>
 
-      <section id="automation" class="grid lower-grid">
-        <form class="panel intake-panel" @submit.prevent="createTicket">
-          <div class="panel-head">
+      <section class="ticket-inspector">
+        <template v-if="selectedTicket">
+          <div class="section-head compact">
             <div>
-              <p class="eyebrow">Новая заявка</p>
-              <h2>Регистрация обращения</h2>
+              <p class="eyebrow">Инспектор #{{ selectedTicket.id }}</p>
+              <h2>{{ selectedTicket.title }}</h2>
             </div>
+            <span class="badge neutral">{{ statusLabels[selectedTicket.status] }}</span>
           </div>
 
+          <p class="description">{{ selectedTicket.description }}</p>
+
+          <dl class="details">
+            <div>
+              <dt>Система</dt>
+              <dd>{{ selectedTicket.system }}</dd>
+            </div>
+            <div>
+              <dt>Ответственный</dt>
+              <dd>{{ selectedTicket.assignee }}</dd>
+            </div>
+            <div>
+              <dt>Создано</dt>
+              <dd>{{ formatDate(selectedTicket.createdAt) }}</dd>
+            </div>
+            <div>
+              <dt>SLA</dt>
+              <dd>{{ formatDate(selectedTicket.dueAt) }}</dd>
+            </div>
+          </dl>
+
+          <div class="hint">
+            <span>Подсказка автоматизации</span>
+            <p>{{ selectedTicket.automationHint }}</p>
+          </div>
+
+          <div class="tags">
+            <span v-for="tag in selectedTicket.tags" :key="tag">#{{ tag }}</span>
+          </div>
+
+          <div class="actions">
+            <button type="button" @click="setStatus(selectedTicket, 'InProgress')">В работу</button>
+            <button type="button" @click="setStatus(selectedTicket, 'WaitingForUser')">Ждем ответ</button>
+            <button type="button" class="primary" @click="setStatus(selectedTicket, 'Resolved')">Решено</button>
+          </div>
+        </template>
+      </section>
+    </section>
+
+    <section id="automation" class="automation-desk">
+      <form class="intake-panel" @submit.prevent="createTicket">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Новая заявка</p>
+            <h2>Регистрация обращения</h2>
+          </div>
+        </div>
+
+        <div class="form-grid">
           <label>
             Тема
             <input v-model="draft.title" type="text" placeholder="Например: не открывается договор" @input="previewClassification" />
@@ -352,66 +373,66 @@ onMounted(async () => {
             </select>
           </label>
 
-          <label>
+          <label class="wide-field">
             Описание
             <textarea v-model="draft.description" rows="5" placeholder="Что произошло, у кого и как повторить" @input="previewClassification"></textarea>
           </label>
-
-          <p v-if="formError" class="form-error">{{ formError }}</p>
-          <button type="submit" class="primary wide">Создать обращение</button>
-        </form>
-
-        <div class="panel automation-panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Автоклассификация</p>
-              <h2>Рекомендация системы</h2>
-            </div>
-            <span class="badge" :class="classification.priority.toLowerCase()">{{ priorityLabels[classification.priority] }}</span>
-          </div>
-
-          <dl class="details">
-            <div>
-              <dt>Ответственный</dt>
-              <dd>{{ classification.assignee }}</dd>
-            </div>
-            <div>
-              <dt>Теги</dt>
-              <dd>{{ classification.tags.join(', ') }}</dd>
-            </div>
-          </dl>
-
-          <div class="hint">
-            <span>Следующий шаг</span>
-            <p>{{ classification.automationHint }}</p>
-          </div>
-
-          <div class="reply">
-            <span>Шаблон ответа</span>
-            <p>{{ classification.suggestedReply }}</p>
-          </div>
         </div>
-      </section>
 
-      <section id="knowledge" class="panel knowledge-panel">
-        <div class="panel-head">
+        <p v-if="formError" class="form-error">{{ formError }}</p>
+        <button type="submit" class="primary wide">Создать обращение</button>
+      </form>
+
+      <section class="automation-panel">
+        <div class="section-head compact">
           <div>
-            <p class="eyebrow">База знаний</p>
-            <h2>Типовые решения</h2>
+            <p class="eyebrow">Автоклассификация</p>
+            <h2>Рекомендация системы</h2>
           </div>
+          <span class="badge" :class="classification.priority.toLowerCase()">{{ priorityLabels[classification.priority] }}</span>
         </div>
 
-        <div class="knowledge-list">
-          <article v-for="article in articles" :key="article.id">
-            <div>
-              <strong>{{ article.title }}</strong>
-              <span>{{ article.system }}</span>
-            </div>
-            <p>{{ article.problem }}</p>
-            <small>{{ article.resolution }}</small>
-          </article>
+        <dl class="details">
+          <div>
+            <dt>Ответственный</dt>
+            <dd>{{ classification.assignee }}</dd>
+          </div>
+          <div>
+            <dt>Теги</dt>
+            <dd>{{ classification.tags.join(', ') }}</dd>
+          </div>
+        </dl>
+
+        <div class="hint">
+          <span>Следующий шаг</span>
+          <p>{{ classification.automationHint }}</p>
+        </div>
+
+        <div class="reply">
+          <span>Шаблон ответа</span>
+          <p>{{ classification.suggestedReply }}</p>
         </div>
       </section>
+    </section>
+
+    <section id="knowledge" class="knowledge-band">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">База знаний</p>
+          <h2>Типовые решения</h2>
+        </div>
+      </div>
+
+      <div class="knowledge-list">
+        <article v-for="article in articles" :key="article.id">
+          <div>
+            <strong>{{ article.title }}</strong>
+            <span>{{ article.system }}</span>
+          </div>
+          <p>{{ article.problem }}</p>
+          <small>{{ article.resolution }}</small>
+        </article>
+      </div>
     </section>
   </main>
 </template>
