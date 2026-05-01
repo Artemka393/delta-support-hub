@@ -72,6 +72,10 @@ button:hover {
   background: #222820;
 }
 
+button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
 .console {
   width: min(1560px, 100%);
   margin: 0 auto;
@@ -193,6 +197,7 @@ button:hover {
   border-radius: 999px;
   background: var(--rust);
   color: #17100b;
+  animation: pulse-token 2.4s ease-in-out infinite;
 }
 
 .metrics-trigger:hover,
@@ -223,6 +228,7 @@ button:hover {
   height: 8px;
   border-radius: 999px;
   background: var(--yellow);
+  animation: led-blink 1.8s ease-in-out infinite;
 }
 
 .status-pill.online {
@@ -247,6 +253,19 @@ button:hover {
     linear-gradient(135deg, rgba(244, 124, 54, 0.09), transparent 44%),
     rgba(13, 15, 12, 0.98);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+}
+
+.panel-pop-enter-active,
+.panel-pop-leave-active {
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+}
+
+.panel-pop-enter-from,
+.panel-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-14px) scale(0.96);
 }
 
 .metrics-widget-head {
@@ -275,6 +294,96 @@ button:hover {
   gap: 8px;
 }
 
+.toast-stack {
+  position: fixed;
+  right: max(18px, calc((100vw - 1560px) / 2 + 18px));
+  bottom: 18px;
+  z-index: 60;
+  display: grid;
+  gap: 10px;
+  width: min(390px, calc(100vw - 36px));
+  pointer-events: none;
+}
+
+.toast-card {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid #6f5a43;
+  border-left: 4px solid var(--rust);
+  border-radius: 10px;
+  background:
+    linear-gradient(120deg, rgba(244, 124, 54, 0.12), transparent 48%),
+    rgba(15, 18, 14, 0.96);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.44);
+  text-align: left;
+}
+
+.toast-card.success {
+  border-left-color: var(--green);
+}
+
+.toast-card.warning {
+  border-left-color: var(--yellow);
+}
+
+.toast-dot {
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: var(--rust);
+  box-shadow: 0 0 18px rgba(244, 124, 54, 0.85);
+  animation: led-blink 1.6s ease-in-out infinite;
+}
+
+.toast-card.success .toast-dot {
+  background: var(--green);
+  box-shadow: 0 0 18px rgba(117, 193, 122, 0.8);
+}
+
+.toast-card.warning .toast-dot {
+  background: var(--yellow);
+  box-shadow: 0 0 18px rgba(244, 193, 93, 0.8);
+}
+
+.toast-card strong,
+.toast-card small {
+  display: block;
+}
+
+.toast-card strong {
+  color: var(--cream);
+  font-size: 14px;
+}
+
+.toast-card small {
+  margin-top: 4px;
+  color: var(--paper-muted);
+  line-height: 1.45;
+}
+
+.toast-pop-enter-active,
+.toast-pop-leave-active {
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
+}
+
+.toast-pop-enter-from,
+.toast-pop-leave-to {
+  opacity: 0;
+  transform: translateX(26px) scale(0.96);
+}
+
+.toast-pop-move {
+  transition: transform 0.24s ease;
+}
+
 .hero-console {
   position: relative;
   overflow: hidden;
@@ -301,6 +410,7 @@ button:hover {
   inset: 18px 28px auto;
   height: 1px;
   background: #6f5a43;
+  animation: scan-line 4.8s ease-in-out infinite;
 }
 
 .hero-console::after {
@@ -323,6 +433,7 @@ button:hover {
   align-content: center;
   gap: 18px;
   padding: 26px 0 34px;
+  animation: intro-rise 0.68s ease both;
 }
 
 .eyebrow {
@@ -390,6 +501,7 @@ h2 {
   border-radius: 18px;
   background: var(--paper);
   color: var(--ink);
+  animation: float-main 7s ease-in-out infinite;
 }
 
 .visual-card-side {
@@ -401,6 +513,7 @@ h2 {
   background: #1a1611;
   color: var(--cream);
   transform: rotate(6deg);
+  animation: float-side 6.4s ease-in-out infinite;
 }
 
 .visual-kicker {
@@ -454,6 +567,8 @@ h2 {
   display: block;
   width: 18px;
   background: var(--ink);
+  transform-origin: bottom;
+  animation: bar-pulse 2.6s ease-in-out infinite alternate;
 }
 
 .visual-bars i:nth-child(1) {
@@ -462,19 +577,23 @@ h2 {
 
 .visual-bars i:nth-child(2) {
   height: 34px;
+  animation-delay: 0.18s;
 }
 
 .visual-bars i:nth-child(3) {
   height: 25px;
+  animation-delay: 0.34s;
 }
 
 .visual-bars i:nth-child(4) {
   height: 48px;
   background: var(--rust);
+  animation-delay: 0.48s;
 }
 
 .visual-bars i:nth-child(5) {
   height: 30px;
+  animation-delay: 0.62s;
 }
 
 .visual-stamp {
@@ -493,6 +612,41 @@ h2 {
   font-style: italic;
   font-weight: 900;
   transform: rotate(14deg);
+  animation: stamp-pulse 2.8s ease-in-out infinite;
+}
+
+.signal-cloud {
+  position: absolute;
+  inset: auto 0 2px auto;
+  display: grid;
+  gap: 8px;
+  width: 180px;
+}
+
+.signal-cloud span {
+  justify-self: end;
+  width: max-content;
+  padding: 7px 10px;
+  border: 1px solid #6f5a43;
+  border-radius: 999px;
+  background: rgba(20, 15, 11, 0.9);
+  color: var(--paper-muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  animation: chip-drift 5s ease-in-out infinite;
+}
+
+.signal-cloud span:nth-child(2) {
+  justify-self: start;
+  animation-delay: 0.45s;
+}
+
+.signal-cloud span:nth-child(3) {
+  animation-delay: 0.9s;
 }
 
 .health-board {
@@ -502,6 +656,7 @@ h2 {
   padding: 18px;
   border: 1px solid #6f5a43;
   background: rgba(25, 20, 15, 0.72);
+  animation: intro-rise 0.74s ease 0.12s both;
 }
 
 .health-board span,
@@ -629,6 +784,7 @@ dt,
   padding: 12px;
   border: 1px dashed #6f5a43;
   background: #15130f;
+  animation: soft-glow 3.8s ease-in-out infinite;
 }
 
 .rail-note strong {
@@ -678,6 +834,10 @@ dt,
   overflow: hidden;
 }
 
+.ticket-rows {
+  position: relative;
+}
+
 .table-head,
 .ticket-row {
   display: grid;
@@ -711,6 +871,12 @@ dt,
     #10130f;
   color: var(--cream);
   text-align: left;
+  overflow: hidden;
+  position: relative;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .ticket-row:hover {
@@ -718,12 +884,44 @@ dt,
     linear-gradient(90deg, rgba(244, 124, 54, 0.12), transparent 40%),
     #171b15;
   box-shadow: none;
+  transform: translateX(3px);
 }
 
 .ticket-row.selected {
   background:
     linear-gradient(90deg, rgba(244, 124, 54, 0.18), transparent 45%),
     #211810;
+}
+
+.ticket-row::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(244, 124, 54, 0.13), transparent);
+  opacity: 0;
+  transform: translateX(-100%);
+}
+
+.ticket-row.selected::after {
+  animation: row-sweep 1.8s ease-in-out infinite;
+}
+
+.ticket-motion-enter-active,
+.ticket-motion-leave-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
+}
+
+.ticket-motion-enter-from,
+.ticket-motion-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.ticket-motion-move {
+  transition: transform 0.28s ease;
 }
 
 .ticket-row.low {
@@ -749,6 +947,7 @@ dt,
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.08em;
+  animation: subtle-flicker 4.4s ease-in-out infinite;
 }
 
 .ticket-main strong,
@@ -859,6 +1058,25 @@ dd {
   border: 1px solid #6f5a43;
   border-left: 5px solid var(--rust);
   background: #18130f;
+  position: relative;
+  overflow: hidden;
+}
+
+.hint::after,
+.reply::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(244, 124, 54, 0.08), transparent);
+  transform: translateX(-120%);
+  animation: hint-scan 5.5s ease-in-out infinite;
+}
+
+.hint > *,
+.reply > * {
+  position: relative;
+  z-index: 1;
 }
 
 .hint p,
@@ -1000,6 +1218,179 @@ textarea:focus {
     linear-gradient(135deg, rgba(244, 124, 54, 0.08), transparent 42%),
     #10130f;
   color: var(--cream);
+  overflow: hidden;
+  position: relative;
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    background 0.18s ease;
+}
+
+.knowledge-list article:hover {
+  border-color: #6f5a43;
+  background:
+    linear-gradient(135deg, rgba(244, 124, 54, 0.14), transparent 45%),
+    #151812;
+  transform: translateY(-4px);
+}
+
+.knowledge-list article::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--rust);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.22s ease;
+}
+
+.knowledge-list article:hover::before {
+  transform: scaleX(1);
+}
+
+@keyframes intro-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float-main {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(1deg);
+  }
+}
+
+@keyframes float-side {
+  0%,
+  100% {
+    transform: translateY(0) rotate(6deg);
+  }
+  50% {
+    transform: translateY(10px) rotate(4deg);
+  }
+}
+
+@keyframes stamp-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(244, 124, 54, 0);
+    transform: rotate(14deg) scale(1);
+  }
+  50% {
+    box-shadow: 0 0 38px rgba(244, 124, 54, 0.42);
+    transform: rotate(10deg) scale(1.06);
+  }
+}
+
+@keyframes bar-pulse {
+  from {
+    transform: scaleY(0.72);
+  }
+  to {
+    transform: scaleY(1.08);
+  }
+}
+
+@keyframes chip-drift {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-12px);
+  }
+}
+
+@keyframes scan-line {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scaleX(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes led-blink {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-token {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(244, 124, 54, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(244, 124, 54, 0);
+  }
+}
+
+@keyframes soft-glow {
+  0%,
+  100% {
+    border-color: #6f5a43;
+  }
+  50% {
+    border-color: rgba(244, 124, 54, 0.8);
+  }
+}
+
+@keyframes row-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+@keyframes hint-scan {
+  0%,
+  40% {
+    transform: translateX(-120%);
+  }
+  70%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes subtle-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  47% {
+    opacity: 0.72;
+  }
+  51% {
+    opacity: 1;
+  }
 }
 
 .knowledge-topline,

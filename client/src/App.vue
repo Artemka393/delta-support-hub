@@ -14,6 +14,18 @@ const isLoading = ref(true);
 const isMetricsOpen = ref(false);
 const formError = ref('');
 
+type ToastTone = 'info' | 'success' | 'warning';
+
+interface ToastMessage {
+  id: number;
+  title: string;
+  detail: string;
+  tone: ToastTone;
+}
+
+const toasts = ref<ToastMessage[]>([]);
+let toastId = 0;
+
 const draft = reactive<CreateTicketRequest>({
   title: '',
   requester: '',
@@ -37,6 +49,16 @@ const priorityLabels: Record<Ticket['priority'], string> = {
   High: 'Высокий',
   Critical: 'Критичный'
 };
+
+function dismissToast(id: number) {
+  toasts.value = toasts.value.filter((toast) => toast.id !== id);
+}
+
+function pushToast(title: string, detail: string, tone: ToastTone = 'info') {
+  const id = ++toastId;
+  toasts.value = [{ id, title, detail, tone }, ...toasts.value].slice(0, 4);
+  window.setTimeout(() => dismissToast(id), 4200);
+}
 
 const selectedTicket = computed(() => tickets.value.find((ticket) => ticket.id === selectedTicketId.value) ?? tickets.value[0]);
 
@@ -71,6 +93,15 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function toggleMetrics() {
+  isMetricsOpen.value = !isMetricsOpen.value;
+  pushToast(
+    isMetricsOpen.value ? 'Сводка открыта' : 'Сводка скрыта',
+    isMetricsOpen.value ? 'Показатели смены доступны в floating-panel.' : 'Панель убрана с рабочего поля.',
+    'info'
+  );
+}
+
 async function loadWorkspace() {
   isLoading.value = true;
 
@@ -85,11 +116,13 @@ async function loadWorkspace() {
     tickets.value = ticketsResult;
     articles.value = knowledgeResult;
     apiMode.value = 'online';
+    pushToast('API синхронизирован', 'Очередь и база знаний обновлены.', 'success');
   } catch {
     summary.value = demoSummary;
     tickets.value = [...demoTickets];
     articles.value = [...demoKnowledge];
     apiMode.value = 'demo';
+    pushToast('Демо-режим активен', 'API недоступен, интерфейс работает на локальных данных.', 'warning');
   } finally {
     selectedTicketId.value = tickets.value[0]?.id ?? null;
     isLoading.value = false;
@@ -118,6 +151,7 @@ async function createTicket() {
 
   if (!draft.title.trim() || !draft.requester.trim() || !draft.description.trim()) {
     formError.value = 'Заполните тему, автора и описание обращения.';
+    pushToast('Не хватает данных', 'Нужны тема, автор и описание обращения.', 'warning');
     return;
   }
 
@@ -128,6 +162,7 @@ async function createTicket() {
     tickets.value = [created, ...tickets.value];
     selectedTicketId.value = created.id;
     apiMode.value = 'online';
+    pushToast('Заявка создана', `#${created.id} отправлена в очередь поддержки.`, 'success');
   } catch {
     const local = classifyLocally(payload.title, payload.description, payload.system);
     const created: Ticket = {
@@ -146,6 +181,7 @@ async function createTicket() {
     selectedTicketId.value = created.id;
     classification.value = local;
     apiMode.value = 'demo';
+    pushToast('Заявка создана локально', `#${created.id} добавлена в demo queue.`, 'warning');
   }
 
   draft.title = '';
@@ -162,9 +198,11 @@ async function setStatus(ticket: Ticket, status: TicketStatus) {
     const updated = await supportApi.updateStatus(ticket.id, status);
     tickets.value = tickets.value.map((item) => (item.id === ticket.id ? updated : item));
     apiMode.value = 'online';
+    pushToast('Статус обновлен', `#${ticket.id}: ${statusLabels[status]}.`, 'success');
   } catch {
     tickets.value = tickets.value.map((item) => (item.id === ticket.id ? { ...item, status } : item));
     apiMode.value = 'demo';
+    pushToast('Статус изменен локально', `#${ticket.id}: ${statusLabels[status]}.`, 'warning');
   }
 }
 
@@ -197,7 +235,7 @@ onMounted(async () => {
           class="metrics-trigger"
           :aria-expanded="isMetricsOpen"
           aria-controls="metrics-widget"
-          @click="isMetricsOpen = !isMetricsOpen"
+          @click="toggleMetrics"
         >
           <span>{{ summary.openCount + summary.inProgressCount }}</span>
           Сводка
@@ -210,38 +248,57 @@ onMounted(async () => {
       </div>
     </header>
 
-    <section v-if="isMetricsOpen" id="metrics-widget" class="metrics-widget" aria-label="Показатели очереди">
-      <div class="metrics-widget-head">
-        <div>
-          <p class="eyebrow">Shift snapshot</p>
-          <h2>Сводка очереди</h2>
+    <transition name="panel-pop">
+      <section v-if="isMetricsOpen" id="metrics-widget" class="metrics-widget" aria-label="Показатели очереди">
+        <div class="metrics-widget-head">
+          <div>
+            <p class="eyebrow">Shift snapshot</p>
+            <h2>Сводка очереди</h2>
+          </div>
+          <button type="button" aria-label="Закрыть сводку" @click="toggleMetrics">×</button>
         </div>
-        <button type="button" aria-label="Закрыть сводку" @click="isMetricsOpen = false">×</button>
-      </div>
 
-      <div class="metrics-grid">
-        <article class="metric open">
-          <span>Новые</span>
-          <strong>{{ summary.openCount }}</strong>
-        </article>
-        <article class="metric progress">
-          <span>В работе</span>
-          <strong>{{ summary.inProgressCount }}</strong>
-        </article>
-        <article class="metric done">
-          <span>Решено</span>
-          <strong>{{ summary.resolvedTodayCount }}</strong>
-        </article>
-        <article class="metric risk">
-          <span>SLA риск</span>
-          <strong>{{ summary.overdueCount || slaRiskCount }}</strong>
-        </article>
-        <article class="metric automation">
-          <span>Авто</span>
-          <strong>{{ summary.automationCoveragePercent }}%</strong>
-        </article>
-      </div>
-    </section>
+        <div class="metrics-grid">
+          <article class="metric open">
+            <span>Новые</span>
+            <strong>{{ summary.openCount }}</strong>
+          </article>
+          <article class="metric progress">
+            <span>В работе</span>
+            <strong>{{ summary.inProgressCount }}</strong>
+          </article>
+          <article class="metric done">
+            <span>Решено</span>
+            <strong>{{ summary.resolvedTodayCount }}</strong>
+          </article>
+          <article class="metric risk">
+            <span>SLA риск</span>
+            <strong>{{ summary.overdueCount || slaRiskCount }}</strong>
+          </article>
+          <article class="metric automation">
+            <span>Авто</span>
+            <strong>{{ summary.automationCoveragePercent }}%</strong>
+          </article>
+        </div>
+      </section>
+    </transition>
+
+    <transition-group name="toast-pop" tag="section" class="toast-stack" aria-live="polite">
+      <button
+        v-for="toast in toasts"
+        :key="toast.id"
+        type="button"
+        class="toast-card"
+        :class="toast.tone"
+        @click="dismissToast(toast.id)"
+      >
+        <span class="toast-dot"></span>
+        <span>
+          <strong>{{ toast.title }}</strong>
+          <small>{{ toast.detail }}</small>
+        </span>
+      </button>
+    </transition-group>
 
     <section class="hero-console">
       <div class="hero-copy">
@@ -271,6 +328,11 @@ onMounted(async () => {
           <small>проверяем журналы API</small>
         </div>
         <div class="visual-stamp">SLA</div>
+        <div class="signal-cloud">
+          <span>rule matched</span>
+          <span>sla timer</span>
+          <span>hint pushed</span>
+        </div>
       </div>
 
       <div class="health-board">
@@ -323,23 +385,24 @@ onMounted(async () => {
 
           <div v-if="isLoading" class="empty">Загружаем обращения...</div>
           <div v-else-if="filteredTickets.length === 0" class="empty">По выбранному статусу обращений нет.</div>
-          <button
-            v-for="ticket in filteredTickets"
-            v-else
-            :key="ticket.id"
-            type="button"
-            class="ticket-row"
-            :class="[ticket.priority.toLowerCase(), { selected: selectedTicket?.id === ticket.id }]"
-            @click="selectedTicketId = ticket.id"
-          >
-            <span class="ticket-code">#{{ ticket.id }}</span>
-            <span class="ticket-main">
-              <strong>{{ ticket.title }}</strong>
-              <small>{{ ticket.requester }} · до {{ formatDate(ticket.dueAt) }}</small>
-            </span>
-            <span class="system-cell">{{ ticket.system }}</span>
-            <span class="badge" :class="ticket.priority.toLowerCase()">{{ priorityLabels[ticket.priority] }}</span>
-          </button>
+          <transition-group v-else name="ticket-motion" tag="div" class="ticket-rows">
+            <button
+              v-for="ticket in filteredTickets"
+              :key="ticket.id"
+              type="button"
+              class="ticket-row"
+              :class="[ticket.priority.toLowerCase(), { selected: selectedTicket?.id === ticket.id }]"
+              @click="selectedTicketId = ticket.id"
+            >
+              <span class="ticket-code">#{{ ticket.id }}</span>
+              <span class="ticket-main">
+                <strong>{{ ticket.title }}</strong>
+                <small>{{ ticket.requester }} · до {{ formatDate(ticket.dueAt) }}</small>
+              </span>
+              <span class="system-cell">{{ ticket.system }}</span>
+              <span class="badge" :class="ticket.priority.toLowerCase()">{{ priorityLabels[ticket.priority] }}</span>
+            </button>
+          </transition-group>
         </div>
       </section>
 
